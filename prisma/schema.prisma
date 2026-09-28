@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PM
+  SPM
+}
+
+enum CandidateStatus {
+  PROCESSING
+  SCORED
+  FAILED
+}
+
+enum EmailKind {
+  INVITE
+  REJECT
+}
+
+enum EmailStatus {
+  DRAFT
+  SENDING // transient: claimed by an in-flight send, prevents a double-click or duplicate request from sending twice
+  SENT
+}
+
+// The rubric a candidate applied under. Every candidate is scored against
+// both RubricCriteria sets regardless of appliedRole (see rubric.txt).
+model RubricCriterion {
+  id          String  @id @default(cuid())
+  role        Role
+  order       Int
+  name        String
+  description String  @db.Text
+  weight      Int // percentage points, sums to 100 per role
+  scores      CriterionScore[]
+
+  @@unique([role, order])
+}
+
+// Job description text per role. Populated by the founder (pasted in via
+// /settings), not auto-extracted. Reference material only — the rubric
+// deliberately scores on patterns the JD doesn't ask for (see
+// Kargo_PM_SPM_Hiring_Rubric.txt section 8), so this is NOT read by the
+// scoring/brief/email pipeline.
+model JobDescription {
+  role      Role     @id
+  content   String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
+model Candidate {
+  id          String          @id @default(cuid())
+  appliedRole Role
+  status      CandidateStatus @default(PROCESSING)
+  failReason  String?         @db.Text
+
+  // Original file, kept for the founder's reference only.
+  fileName String
+  fileType String
+
+  // CV text with the candidate's own name/email/phone strings stripped out.
+  // This is the only representation of the CV ever sent to Gemini.
+  cvBodyRedacted String @db.Text
+
+  personalDetails PersonalDetails?
+  scores          CriterionScore[]
+  brief           Brief?
+  emailDraft      EmailDraft?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([appliedRole, status])
+}
+
+// Kept separate from Candidate on purpose: nothing in this model is ever
+// read by the scoring/brief/email-drafting pipeline, only by the UI and
+// by the final string-substitution step that personalizes email drafts.
+model PersonalDetails {
+  candidateId String    @id
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  name        String
+  email       String
+  phone       String?
+}
+
+// One row per (candidate, rubric role) per criterion — every candidate is
+// scored against both the PM and SPM rubric regardless of which role they
+// applied for.
+model CriterionScore {
+  id          String   @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  rubricRole  Role // which rubric (PM or SPM) this score belongs to
+  criterionId String
+  criterion   RubricCriterion @relation(fields: [criterionId], references: [id])
+  score       Int // 0-3
+  reason      String @db.Text // one-line reason
+
+  @@unique([candidateId, rubricRole, criterionId])
+}
+
+// Three-sentence interview brief, generated only for top candidates per role.
+model Brief {
+  candidateId String    @id
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  content     String    @db.Text
+  createdAt   DateTime  @default(now())
+}
+
+// Personalized draft, one per candidate. Body is generated with a
+// {{candidate_name}} placeholder and substituted with the real name from
+// PersonalDetails in Node — the AI never sees the real name.
+model EmailDraft {
+  candidateId String      @id
+  candidate   Candidate   @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  kind        EmailKind
+  subject     String
+  body        String      @db.Text
+  status      EmailStatus @default(DRAFT)
+  sentAt      DateTime?
+  updatedAt   DateTime    @updatedAt
+}
