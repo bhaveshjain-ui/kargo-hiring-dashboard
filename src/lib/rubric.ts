@@ -107,6 +107,19 @@ export function weightedTotal(
   return Math.round(total * 10) / 10;
 }
 
+/**
+ * Ranks candidates by score, highest first, with a deterministic tiebreak
+ * (earlier-created first) for equal scores. Used everywhere a "top N" or
+ * "rank #" is computed — the dashboard's displayed rank, the compare page's
+ * ordering, and refreshBriefsForRole's top-N cutoff all need to agree on
+ * the SAME order, or a candidate can show as e.g. rank 5 on the dashboard
+ * while a differently-tie-broken internal ranking excluded them from the
+ * top 5 that actually got a brief.
+ */
+export function rankByScore<T extends { total: number; createdAt: Date }>(items: T[]): T[] {
+  return [...items].sort((a, b) => b.total - a.total || a.createdAt.getTime() - b.createdAt.getTime());
+}
+
 // How many points a candidate needs (against the rubric for the role they
 // applied for) to get an interview invite instead of a warm rejection.
 export const INVITE_SCORE_CUTOFF = 60;

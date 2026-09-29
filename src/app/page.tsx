@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Nav } from "@/components/Nav";
+import { AppShell } from "@/components/AppShell";
+import { CandidateTable, TableCandidate } from "@/components/CandidateTable";
 import { prisma } from "@/lib/db";
-import { INVITE_SCORE_CUTOFF, weightedTotal } from "@/lib/rubric";
+import { INVITE_SCORE_CUTOFF, weightedTotal, rankByScore } from "@/lib/rubric";
 
 export const dynamic = "force-dynamic";
 
@@ -25,21 +26,33 @@ export default async function DashboardPage({
     orderBy: { createdAt: "desc" },
   });
 
-  const ranked = candidates
-    .map((c) => ({
+  const ranked = rankByScore(
+    candidates.map((c) => ({
       ...c,
       total: weightedTotal(c.scores.map((s) => ({ score: s.score, weight: s.criterion.weight }))),
     }))
-    .sort((a, b) => b.total - a.total);
+  );
+
+  const tableData: TableCandidate[] = ranked.map((c) => ({
+    id: c.id,
+    name: c.personalDetails?.name || "",
+    total: c.total,
+    status: c.status,
+    jdMatch: c.jdMatch,
+    jdMatchReason: c.jdMatchReason,
+    briefReady: Boolean(c.brief),
+    emailStatus: c.emailDraft?.status ?? null,
+    emailKind: c.emailDraft?.kind ?? null,
+    createdAt: c.createdAt.toISOString(),
+  }));
 
   const scoredCount = ranked.filter((c) => c.status === "SCORED").length;
   const aboveLineCount = ranked.filter((c) => c.status === "SCORED" && c.total >= INVITE_SCORE_CUTOFF).length;
   const briefsCount = ranked.filter((c) => c.brief).length;
 
   return (
-    <div>
-      <Nav active="dashboard" />
-      <main className="max-w-6xl mx-auto px-6 py-8">
+    <AppShell active="dashboard">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-semibold text-foreground tracking-tight">Candidates</h1>
@@ -68,59 +81,10 @@ export default async function DashboardPage({
             .
           </div>
         ) : (
-          <div className="border border-border rounded-xl overflow-hidden bg-surface shadow-card">
-            <table className="w-full text-sm">
-              <thead className="bg-background text-muted text-xs uppercase tracking-wide">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium">Rank</th>
-                  <th className="text-left px-4 py-3 font-medium">Candidate</th>
-                  <th className="text-left px-4 py-3 font-medium">Score</th>
-                  <th className="text-left px-4 py-3 font-medium">Status</th>
-                  <th className="text-left px-4 py-3 font-medium">Brief</th>
-                  <th className="text-left px-4 py-3 font-medium">Email</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ranked.map((c, i) => (
-                  <tr key={c.id} className="border-t border-border hover:bg-surface-hover transition-colors">
-                    <td className="px-4 py-3 text-muted tabular-nums">{i + 1}</td>
-                    <td className="px-4 py-3">
-                      <Link href={`/candidates/${c.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
-                        {c.personalDetails?.name || "(processing)"}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3">
-                      {c.status === "SCORED" ? (
-                        <span className="font-medium text-foreground tabular-nums">{Math.round(c.total * 10) / 10}</span>
-                      ) : (
-                        <StatusBadge status={c.status} />
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {c.status === "SCORED" && (
-                        <Badge tone={c.total >= INVITE_SCORE_CUTOFF ? "success" : "muted"}>
-                          {c.total >= INVITE_SCORE_CUTOFF ? "Above the line" : "Below the line"}
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-muted">{c.brief ? "Ready" : "—"}</td>
-                    <td className="px-4 py-3 text-muted">
-                      {c.emailDraft
-                        ? c.emailDraft.status === "SENT"
-                          ? <Badge tone="success">Sent</Badge>
-                          : c.emailDraft.status === "SENDING"
-                            ? <Badge tone="warn">Sending…</Badge>
-                            : <Badge tone="primary">{c.emailDraft.kind === "INVITE" ? "Invite draft" : "Reject draft"}</Badge>
-                        : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <CandidateTable candidates={tableData} />
         )}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }
 
@@ -158,25 +122,4 @@ function StatCard({
       </p>
     </div>
   );
-}
-
-function Badge({ tone, children }: { tone: "success" | "warn" | "danger" | "primary" | "muted"; children: React.ReactNode }) {
-  const styles: Record<typeof tone, string> = {
-    success: "bg-success-soft text-success",
-    warn: "bg-warn-soft text-warn",
-    danger: "bg-danger-soft text-danger",
-    primary: "bg-primary-soft text-primary",
-    muted: "bg-surface-hover text-muted",
-  };
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${styles[tone]}`}>
-      {children}
-    </span>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  if (status === "PROCESSING") return <Badge tone="warn">Scoring…</Badge>;
-  if (status === "FAILED") return <Badge tone="danger">Failed</Badge>;
-  return <Badge tone="muted">{status}</Badge>;
 }

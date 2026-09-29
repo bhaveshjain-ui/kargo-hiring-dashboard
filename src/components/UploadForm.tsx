@@ -1,209 +1,281 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
+import Link from "next/link";
 
-type Step =
-  | { kind: "pick" }
-  | { kind: "parsing" }
-  | {
-      kind: "confirm";
-      cvText: string;
-      fileName: string;
-      fileType: string;
-      appliedRole: "PM" | "SPM";
-      name: string;
-      email: string;
-      phone: string;
-    }
-  | { kind: "submitting" };
+type ItemStatus = "parsing" | "ready" | "parse-error" | "submitting" | "done" | "submit-error";
+
+interface QueueItem {
+  key: string;
+  file: File;
+  status: ItemStatus;
+  error?: string;
+  cvText?: string;
+  fileType?: string;
+  name: string;
+  email: string;
+  phone: string;
+  candidateId?: string;
+}
 
 export function UploadForm() {
-  const router = useRouter();
-  const [step, setStep] = useState<Step>({ kind: "pick" });
   const [appliedRole, setAppliedRole] = useState<"PM" | "SPM">("PM");
-  const [error, setError] = useState<string | null>(null);
+  const [items, setItems] = useState<QueueItem[]>([]);
+  const [processing, setProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
 
-  async function handleFileSelected(file: File) {
-    setError(null);
-    setStep({ kind: "parsing" });
+  function updateItem(key: string, patch: Partial<QueueItem>) {
+    setItems((prev) => prev.map((it) => (it.key === key ? { ...it, ...patch } : it)));
+  }
 
+  async function parseFile(item: QueueItem) {
     const form = new FormData();
-    form.append("file", file);
-
+    form.append("file", item.file);
     try {
       const res = await fetch("/api/candidates/parse", { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not read that file.");
-
-      setStep({
-        kind: "confirm",
+      updateItem(item.key, {
+        status: "ready",
         cvText: data.cvText,
-        fileName: data.fileName,
         fileType: data.fileType,
-        appliedRole,
         name: data.detected.name,
         email: data.detected.email,
         phone: data.detected.phone,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
-      setStep({ kind: "pick" });
-    }
-  }
-
-  async function handleConfirm(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (step.kind !== "confirm") return;
-
-    const form = new FormData(e.currentTarget);
-    const name = String(form.get("name") || "").trim();
-    const email = String(form.get("email") || "").trim();
-    const phone = String(form.get("phone") || "").trim();
-
-    if (!name || !email) {
-      setError("Name and email are required.");
-      return;
-    }
-
-    setError(null);
-    setStep({ kind: "submitting" });
-
-    try {
-      const res = await fetch("/api/candidates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          appliedRole: step.appliedRole,
-          fileName: step.fileName,
-          fileType: step.fileType,
-          cvText: step.cvText,
-          name,
-          email,
-          phone,
-        }),
+      updateItem(item.key, {
+        status: "parse-error",
+        error: err instanceof Error ? err.message : "Something went wrong.",
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Could not save that candidate.");
-      router.push(`/candidates/${data.id}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
-      setStep({ ...step });
     }
   }
 
-  if (step.kind === "pick" || step.kind === "parsing") {
-    return (
+  function addFiles(fileList: FileList | File[]) {
+    const newItems: QueueItem[] = Array.from(fileList).map((file) => ({
+      key: `${file.name}-${file.size}-${Math.random().toString(36).slice(2)}`,
+      file,
+      status: "parsing",
+      name: "",
+      email: "",
+      phone: "",
+    }));
+    setItems((prev) => [...prev, ...newItems]);
+    for (const item of newItems) {
+      parseFile(item);
+    }
+  }
+
+  function removeItem(key: string) {
+    setItems((prev) => prev.filter((it) => it.key !== key));
+  }
+
+  async function processAll() {
+    setProcessing(true);
+    // Sequential on purpose: each candidate create runs scoring + brief +
+    // email drafting synchronously server-side (~15-30s of real Gemini
+    // work). Firing them concurrently would just queue up behind the same
+    // rate limits with no user-visible benefit, and makes per-item progress
+    // impossible to show clearly.
+    const ready = items.filter((it) => it.status === "ready");
+    for (const item of ready) {
+      updateItem(item.key, { status: "submitting" });
+      try {
+        const res = await fetch("/api/candidates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            appliedRole,
+            fileName: item.file.name,
+            fileType: item.fileType,
+            cvText: item.cvText,
+            name: item.name,
+            email: item.email,
+            phone: item.phone,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Could not save that candidate.");
+        updateItem(item.key, { status: "done", candidateId: data.id });
+      } catch (err) {
+        updateItem(item.key, {
+          status: "submit-error",
+          error: err instanceof Error ? err.message : "Something went wrong.",
+        });
+      }
+    }
+    setProcessing(false);
+  }
+
+  const readyCount = items.filter((it) => it.status === "ready").length;
+  const doneCount = items.filter((it) => it.status === "done").length;
+  const totalToProcess = items.filter((it) => it.status === "ready" || it.status === "submitting" || it.status === "done" || it.status === "submit-error").length;
+  const hasParsingItems = items.some((it) => it.status === "parsing");
+
+  return (
+    <div className="space-y-4">
       <div className="border border-border rounded-xl bg-surface p-6 shadow-card space-y-4">
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">Role applied for</label>
           <select
             value={appliedRole}
             onChange={(e) => setAppliedRole(e.target.value as "PM" | "SPM")}
-            className="border border-border rounded-md px-3 py-2 text-sm w-full bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            disabled={processing}
+            className="border border-border rounded-md px-3 py-2 text-sm w-full bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50"
           >
             <option value="PM">Product Manager</option>
             <option value="SPM">Senior Product Manager</option>
           </select>
+          <p className="text-xs text-muted mt-1">Applies to every CV in this batch.</p>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-1">CV file</label>
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+          }}
+          onClick={() => fileInputRef.current?.click()}
+          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+            dragOver ? "border-primary bg-primary-soft" : "border-border hover:border-primary/50"
+          }`}
+        >
           <input
+            ref={fileInputRef}
             type="file"
+            multiple
             accept=".pdf,.docx,.txt,.md"
-            disabled={step.kind === "parsing"}
             onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleFileSelected(file);
+              if (e.target.files?.length) addFiles(e.target.files);
+              e.target.value = "";
             }}
-            className="block w-full text-sm border border-border rounded-md px-3 py-2 bg-background text-foreground file:mr-3 file:rounded file:border-0 file:bg-primary file:text-primary-foreground file:px-3 file:py-1.5 file:text-sm file:cursor-pointer"
+            className="hidden"
           />
-          <p className="text-xs text-muted mt-1">PDF, DOCX, or TXT.</p>
+          <p className="text-sm text-foreground font-medium">Drop CVs here, or click to browse</p>
+          <p className="text-xs text-muted mt-1">PDF, DOCX, or TXT — select as many as you like.</p>
         </div>
-
-        {step.kind === "parsing" && (
-          <p className="text-sm text-muted flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-            Reading the CV…
-          </p>
-        )}
-        {error && <p className="text-sm text-danger">{error}</p>}
       </div>
-    );
-  }
 
-  if (step.kind === "confirm") {
-    return (
-      <form
-        onSubmit={handleConfirm}
-        className="border border-border rounded-xl bg-surface p-6 shadow-card space-y-4"
-      >
-        <div className="rounded-md border border-primary/20 bg-primary-soft p-4 text-sm text-foreground/80">
-          <p>
-            We auto-detected these from <span className="font-medium text-foreground">{step.fileName}</span>.
-            Check them — anything here will be stripped out of the CV before it ever reaches
-            the AI, so it needs to be right.
+      {items.length > 0 && (
+        <div className="space-y-3">
+          {items.map((item) => (
+            <QueueRow
+              key={item.key}
+              item={item}
+              onChange={(patch) => updateItem(item.key, patch)}
+              onRemove={() => removeItem(item.key)}
+              disabled={processing}
+            />
+          ))}
+        </div>
+      )}
+
+      {items.length > 0 && (
+        <div className="border border-border rounded-xl bg-surface p-4 shadow-card flex items-center justify-between">
+          <p className="text-sm text-muted">
+            {processing
+              ? `Processing ${Math.min(doneCount + 1, totalToProcess)} of ${totalToProcess}… keep this tab open.`
+              : hasParsingItems
+                ? "Reading files…"
+                : `${readyCount} ready to score.`}
           </p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-1">Full name</label>
-          <input
-            name="name"
-            defaultValue={step.name}
-            required
-            className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-1">Email</label>
-          <input
-            name="email"
-            type="email"
-            defaultValue={step.email}
-            required
-            className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-1">Phone (optional)</label>
-          <input
-            name="phone"
-            defaultValue={step.phone}
-            className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-          />
-        </div>
-
-        {error && <p className="text-sm text-danger">{error}</p>}
-
-        <div className="flex gap-2">
           <button
-            type="submit"
-            className="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium hover:bg-primary-hover transition-colors"
+            onClick={processAll}
+            disabled={processing || readyCount === 0}
+            className="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
           >
-            Confirm and score
-          </button>
-          <button
-            type="button"
-            onClick={() => setStep({ kind: "pick" })}
-            className="text-sm text-muted hover:text-foreground px-4 py-2 transition-colors"
-          >
-            Start over
+            {processing ? "Processing…" : `Score ${readyCount || ""} candidate${readyCount === 1 ? "" : "s"}`}
           </button>
         </div>
-      </form>
-    );
-  }
-
-  return (
-    <div className="border border-border rounded-xl bg-surface p-6 shadow-card">
-      <p className="text-sm text-muted flex items-center gap-2">
-        <span className="w-3.5 h-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-        Scoring against the rubric — this can take a few seconds…
-      </p>
+      )}
     </div>
+  );
+}
+
+function QueueRow({
+  item,
+  onChange,
+  onRemove,
+  disabled,
+}: {
+  item: QueueItem;
+  onChange: (patch: Partial<QueueItem>) => void;
+  onRemove: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="border border-border rounded-xl bg-surface p-4 shadow-card">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-medium text-foreground truncate">{item.file.name}</p>
+        <StatusPill status={item.status} />
+      </div>
+
+      {item.status === "parse-error" && <p className="text-sm text-danger mt-2">{item.error}</p>}
+      {item.status === "submit-error" && <p className="text-sm text-danger mt-2">{item.error}</p>}
+
+      {item.status === "done" && item.candidateId && (
+        <Link href={`/candidates/${item.candidateId}`} className="text-sm text-primary hover:text-primary-hover font-medium mt-2 inline-block">
+          View candidate &rarr;
+        </Link>
+      )}
+
+      {(item.status === "ready" || item.status === "submitting") && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+          <input
+            value={item.name}
+            onChange={(e) => onChange({ name: e.target.value })}
+            disabled={disabled || item.status === "submitting"}
+            placeholder="Full name"
+            className="border border-border bg-background rounded-md px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50"
+          />
+          <input
+            value={item.email}
+            onChange={(e) => onChange({ email: e.target.value })}
+            disabled={disabled || item.status === "submitting"}
+            placeholder="Email"
+            className="border border-border bg-background rounded-md px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50"
+          />
+          <input
+            value={item.phone}
+            onChange={(e) => onChange({ phone: e.target.value })}
+            disabled={disabled || item.status === "submitting"}
+            placeholder="Phone (optional)"
+            className="border border-border bg-background rounded-md px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50"
+          />
+        </div>
+      )}
+
+      {(item.status === "ready" || item.status === "parse-error" || item.status === "submit-error") && !disabled && (
+        <button onClick={onRemove} className="text-xs text-muted hover:text-danger transition-colors mt-2">
+          Remove
+        </button>
+      )}
+    </div>
+  );
+}
+
+function StatusPill({ status }: { status: ItemStatus }) {
+  const map: Record<ItemStatus, { label: string; className: string }> = {
+    parsing: { label: "Reading…", className: "bg-warn-soft text-warn" },
+    ready: { label: "Ready", className: "bg-primary-soft text-primary" },
+    "parse-error": { label: "Couldn't read", className: "bg-danger-soft text-danger" },
+    submitting: { label: "Scoring…", className: "bg-warn-soft text-warn" },
+    done: { label: "Done", className: "bg-success-soft text-success" },
+    "submit-error": { label: "Failed", className: "bg-danger-soft text-danger" },
+  };
+  const { label, className } = map[status];
+  return (
+    <span className={`flex-none inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium ${className}`}>
+      {(status === "parsing" || status === "submitting") && (
+        <span className="w-2.5 h-2.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+      )}
+      {label}
+    </span>
   );
 }

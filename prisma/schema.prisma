@@ -68,6 +68,13 @@ model Candidate {
   // This is the only representation of the CV ever sent to Gemini.
   cvBodyRedacted String @db.Text
 
+  // Best-effort check against the JD's explicit hard requirements (years of
+  // experience, named must-haves) — separate from the rubric score on
+  // purpose, since the rubric deliberately ignores JD-fit. Null until
+  // computed; stays null forever if no JD has been entered for the role.
+  jdMatch       Boolean?
+  jdMatchReason String?  @db.Text
+
   personalDetails PersonalDetails?
   scores          CriterionScore[]
   brief           Brief?

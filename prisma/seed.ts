@@ -24,18 +24,18 @@ async function main() {
     }
   }
 
+  // content starts empty (not a placeholder sentence) so the pipeline can
+  // reliably tell "no JD entered yet" apart from real JD text — see
+  // src/lib/jdMatch.ts.
   for (const role of ["PM", "SPM"] as RubricRole[]) {
     await prisma.jobDescription.upsert({
       where: { role },
       update: {},
-      create: {
-        role,
-        content: `Paste the ${role} job description here from /settings before candidates are pre-screened against it.`,
-      },
+      create: { role, content: "" },
     });
   }
 
-  console.log("Seeded rubric criteria and placeholder job descriptions.");
+  console.log("Seeded rubric criteria and empty job description rows.");
 }
 
 main()

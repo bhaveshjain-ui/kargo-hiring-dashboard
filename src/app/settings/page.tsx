@@ -1,4 +1,4 @@
-import { Nav } from "@/components/Nav";
+import { AppShell } from "@/components/AppShell";
 import { prisma } from "@/lib/db";
 import { JdEditor } from "@/components/JdEditor";
 import { INVITE_SCORE_CUTOFF, TOP_N_BRIEFS_PER_ROLE } from "@/lib/rubric";
@@ -11,15 +11,18 @@ export default async function SettingsPage() {
   const spm = jds.find((j) => j.role === "SPM");
 
   return (
-    <div>
-      <Nav active="settings" />
-      <main className="max-w-3xl mx-auto px-6 py-8 space-y-6">
+    <AppShell active="settings">
+      <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
         <div>
           <h1 className="text-xl font-semibold text-foreground tracking-tight">Settings</h1>
           <p className="text-sm text-muted mt-1">
-            Job descriptions are kept here for your own reference — the scoring
-            rubric (Kargo_PM_SPM_Hiring_Rubric.txt) deliberately scores on
-            patterns the JD doesn&apos;t ask for, so JD text isn&apos;t sent to the AI.
+            Job descriptions here are used for one thing: checking a CV against
+            the JD&apos;s explicit hard requirements (years of experience, named
+            must-haves), shown as a match/mismatch chip on each candidate. The
+            rubric score itself is separate and never uses the JD — it
+            deliberately scores on patterns the JD doesn&apos;t ask for (see
+            Kargo_PM_SPM_Hiring_Rubric.txt). Leave a JD blank to skip that check
+            for a role.
           </p>
         </div>
 
@@ -34,7 +37,7 @@ export default async function SettingsPage() {
             Edit these in src/lib/rubric.ts and redeploy to change them.
           </p>
         </div>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

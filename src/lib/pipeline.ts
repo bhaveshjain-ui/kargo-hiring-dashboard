@@ -2,6 +2,7 @@ import { prisma } from "./db";
 import { scoreCandidate } from "./scoring";
 import { generateBrief } from "./brief";
 import { generateInterviewQuestions } from "./interviewQuestions";
+import { checkJdMatch } from "./jdMatch";
 import { draftEmail, NAME_PLACEHOLDER } from "./emailDraft";
 import {
   INVITE_SCORE_CUTOFF,
@@ -9,6 +10,7 @@ import {
   RubricRole,
   RUBRICS,
   weightedTotal,
+  rankByScore,
 } from "./rubric";
 
 /**
@@ -138,6 +140,7 @@ async function runEmailAndBriefStep(scored: ScoredCandidate): Promise<void> {
   const results = await Promise.allSettled([
     draftEmailForCandidate(scored),
     refreshBriefsForRole(scored.appliedRole),
+    checkJdMatchForCandidate(scored),
   ]);
 
   for (const result of results) {
@@ -152,6 +155,14 @@ async function runEmailAndBriefStep(scored: ScoredCandidate): Promise<void> {
 }
 
 async function draftEmailForCandidate(scored: ScoredCandidate): Promise<void> {
+  const existing = await prisma.emailDraft.findUnique({ where: { candidateId: scored.candidateId } });
+  if (existing && existing.status !== "DRAFT") {
+    // Already sent (or a send is in flight) — never overwrite that, even
+    // on a retry. Regenerating here would silently erase the record that
+    // an email went out and reset it to an unsent draft.
+    return;
+  }
+
   const kind = scored.appliedTotal >= INVITE_SCORE_CUTOFF ? "INVITE" : "REJECT";
 
   const draft = await draftEmail({
@@ -183,6 +194,29 @@ async function draftEmailForCandidate(scored: ScoredCandidate): Promise<void> {
 }
 
 /**
+ * Checks the candidate's CV against the JD's hard requirements, if a JD has
+ * actually been entered for their applied role (see prisma/seed.ts — the
+ * JobDescription content starts empty, not a placeholder sentence, so an
+ * empty string reliably means "no JD yet" rather than needing to guess).
+ * A no-op, not an error, when there's no JD to check against.
+ */
+async function checkJdMatchForCandidate(scored: ScoredCandidate): Promise<void> {
+  const jd = await prisma.jobDescription.findUnique({ where: { role: scored.appliedRole } });
+  if (!jd || jd.content.trim().length === 0) return;
+
+  const result = await checkJdMatch({
+    appliedRole: scored.appliedRole,
+    cvBodyRedacted: scored.cvBodyRedacted,
+    jdContent: jd.content,
+  });
+
+  await prisma.candidate.update({
+    where: { id: scored.candidateId },
+    data: { jdMatch: result.matches, jdMatchReason: result.reason },
+  });
+}
+
+/**
  * Ensures every candidate currently in the top N (by score against their
  * applied-role rubric) has a generated Brief. Existing briefs for
  * candidates who later drop out of the top N are left in place rather than
@@ -201,13 +235,13 @@ export async function refreshBriefsForRole(role: RubricRole): Promise<void> {
     include: { scores: { where: { rubricRole: role }, include: { criterion: true } }, brief: true },
   });
 
-  const ranked = candidates
-    .map((c) => ({
+  const ranked = rankByScore(
+    candidates.map((c) => ({
       candidate: c,
       total: weightedTotal(c.scores.map((s) => ({ score: s.score, weight: s.criterion.weight }))),
+      createdAt: c.createdAt,
     }))
-    .sort((a, b) => b.total - a.total)
-    .slice(0, TOP_N_BRIEFS_PER_ROLE);
+  ).slice(0, TOP_N_BRIEFS_PER_ROLE);
 
   for (const { candidate, total } of ranked) {
     // Backfills questions onto a brief generated before that field existed,
