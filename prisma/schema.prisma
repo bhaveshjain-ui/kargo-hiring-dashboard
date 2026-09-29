@@ -106,11 +106,13 @@ model CriterionScore {
   @@unique([candidateId, rubricRole, criterionId])
 }
 
-// Three-sentence interview brief, generated only for top candidates per role.
+// Three-sentence interview brief plus a short list of interview questions,
+// generated only for top candidates per role.
 model Brief {
   candidateId String    @id
   candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   content     String    @db.Text
+  questions   String[]  @default([])
   createdAt   DateTime  @default(now())
 }
 

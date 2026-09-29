@@ -91,6 +91,22 @@ export default async function CandidatePage({ params }: { params: { id: string }
           </div>
         )}
 
+        {candidate.brief && candidate.brief.questions.length > 0 && (
+          <div className="border border-border rounded-xl bg-surface p-5 shadow-card">
+            <h2 className="text-sm font-semibold text-foreground mb-3">Interview questions</h2>
+            <ol className="space-y-3">
+              {candidate.brief.questions.map((q, i) => (
+                <li key={i} className="flex gap-3 text-sm">
+                  <span className="flex-none w-5 h-5 rounded-full bg-primary-soft text-primary text-xs font-medium flex items-center justify-center mt-0.5">
+                    {i + 1}
+                  </span>
+                  <span className="text-foreground/80 leading-relaxed">{q}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
         {candidate.status === "SCORED" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {(["PM", "SPM"] as RubricRole[]).map((role) => (

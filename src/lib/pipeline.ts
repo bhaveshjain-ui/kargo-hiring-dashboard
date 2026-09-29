@@ -1,6 +1,7 @@
 import { prisma } from "./db";
 import { scoreCandidate } from "./scoring";
 import { generateBrief } from "./brief";
+import { generateInterviewQuestions } from "./interviewQuestions";
 import { draftEmail, NAME_PLACEHOLDER } from "./emailDraft";
 import {
   INVITE_SCORE_CUTOFF,
@@ -209,24 +210,35 @@ export async function refreshBriefsForRole(role: RubricRole): Promise<void> {
     .slice(0, TOP_N_BRIEFS_PER_ROLE);
 
   for (const { candidate, total } of ranked) {
-    if (candidate.brief) continue;
+    // Backfills questions onto a brief generated before that field existed,
+    // as well as generating both fresh for a candidate with no brief yet.
+    if (candidate.brief && candidate.brief.questions.length > 0) continue;
 
     const topReasons = [...candidate.scores]
       .sort((a, b) => b.score - a.score)
       .slice(0, 3)
       .map((s) => `${s.criterion.name}: ${s.reason}`);
 
-    const content = await generateBrief({
-      appliedRole: role,
-      cvBodyRedacted: candidate.cvBodyRedacted,
-      totalScore: total,
-      topReasons,
-    });
+    const [content, questions] = await Promise.all([
+      candidate.brief
+        ? Promise.resolve(candidate.brief.content)
+        : generateBrief({
+            appliedRole: role,
+            cvBodyRedacted: candidate.cvBodyRedacted,
+            totalScore: total,
+            topReasons,
+          }),
+      generateInterviewQuestions({
+        appliedRole: role,
+        cvBodyRedacted: candidate.cvBodyRedacted,
+        topReasons,
+      }),
+    ]);
 
     await prisma.brief.upsert({
       where: { candidateId: candidate.id },
-      update: { content },
-      create: { candidateId: candidate.id, content },
+      update: { content, questions },
+      create: { candidateId: candidate.id, content, questions },
     });
   }
 }
