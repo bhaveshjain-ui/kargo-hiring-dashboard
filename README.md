@@ -40,7 +40,7 @@ change them.
   gets deployed. Any Postgres works (Supabase, RDS, etc.) — just change
   `DATABASE_URL`.
 - **Gemini** (`@google/genai`) — scoring, briefs, and email drafts. Model is
-  configurable via `GEMINI_MODEL` (defaults to `gemini-2.5-flash`).
+  configurable via `GEMINI_MODEL` (defaults to `gemini-3.8-flash`).
 - **Resend** — the only thing that sends real email, and only when Arjun
   clicks Send.
 - **Tailwind** — minimal, functional styling only.

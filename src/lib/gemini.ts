@@ -15,7 +15,7 @@ function client(): GoogleGenAI {
   return globalForGemini.gemini;
 }
 
-export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
 /**
  * Calls Gemini asking for a single JSON object back, validated against the
