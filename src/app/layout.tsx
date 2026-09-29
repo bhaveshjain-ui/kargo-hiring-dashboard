@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { themeInitScript } from "@/components/ThemeToggle";
 
 export const metadata: Metadata = {
   title: "Kargo Hiring Dashboard",
@@ -9,7 +10,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-paper text-ink antialiased">{children}</body>
+      <head>
+        {/* Applied before paint so switching themes never flashes the wrong one on load. */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className="min-h-screen bg-background text-foreground antialiased">{children}</body>
     </html>
   );
 }

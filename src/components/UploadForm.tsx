@@ -94,13 +94,13 @@ export function UploadForm() {
 
   if (step.kind === "pick" || step.kind === "parsing") {
     return (
-      <div className="space-y-4">
+      <div className="border border-border rounded-xl bg-surface p-6 shadow-card space-y-4">
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">Role applied for</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Role applied for</label>
           <select
             value={appliedRole}
             onChange={(e) => setAppliedRole(e.target.value as "PM" | "SPM")}
-            className="border border-line rounded-md px-3 py-2 text-sm w-full bg-white"
+            className="border border-border rounded-md px-3 py-2 text-sm w-full bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
           >
             <option value="PM">Product Manager</option>
             <option value="SPM">Senior Product Manager</option>
@@ -108,7 +108,7 @@ export function UploadForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">CV file</label>
+          <label className="block text-sm font-medium text-foreground mb-1">CV file</label>
           <input
             type="file"
             accept=".pdf,.docx,.txt,.md"
@@ -117,73 +117,79 @@ export function UploadForm() {
               const file = e.target.files?.[0];
               if (file) handleFileSelected(file);
             }}
-            className="block w-full text-sm border border-line rounded-md px-3 py-2 bg-white file:mr-3 file:rounded file:border-0 file:bg-ink file:text-white file:px-3 file:py-1.5 file:text-sm"
+            className="block w-full text-sm border border-border rounded-md px-3 py-2 bg-background text-foreground file:mr-3 file:rounded file:border-0 file:bg-primary file:text-primary-foreground file:px-3 file:py-1.5 file:text-sm file:cursor-pointer"
           />
-          <p className="text-xs text-ink/50 mt-1">PDF, DOCX, or TXT.</p>
+          <p className="text-xs text-muted mt-1">PDF, DOCX, or TXT.</p>
         </div>
 
         {step.kind === "parsing" && (
-          <p className="text-sm text-ink/60">Reading the CV…</p>
+          <p className="text-sm text-muted flex items-center gap-2">
+            <span className="w-3.5 h-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            Reading the CV…
+          </p>
         )}
-        {error && <p className="text-sm text-bad">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
       </div>
     );
   }
 
   if (step.kind === "confirm") {
     return (
-      <form onSubmit={handleConfirm} className="space-y-4">
-        <div className="rounded-md border border-line bg-white p-4 text-sm text-ink/70">
+      <form
+        onSubmit={handleConfirm}
+        className="border border-border rounded-xl bg-surface p-6 shadow-card space-y-4"
+      >
+        <div className="rounded-md border border-primary/20 bg-primary-soft p-4 text-sm text-foreground/80">
           <p>
-            We auto-detected these from <span className="font-medium">{step.fileName}</span>.
+            We auto-detected these from <span className="font-medium text-foreground">{step.fileName}</span>.
             Check them — anything here will be stripped out of the CV before it ever reaches
             the AI, so it needs to be right.
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">Full name</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Full name</label>
           <input
             name="name"
             defaultValue={step.name}
             required
-            className="w-full border border-line rounded-md px-3 py-2 text-sm bg-white"
+            className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">Email</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Email</label>
           <input
             name="email"
             type="email"
             defaultValue={step.email}
             required
-            className="w-full border border-line rounded-md px-3 py-2 text-sm bg-white"
+            className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">Phone (optional)</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Phone (optional)</label>
           <input
             name="phone"
             defaultValue={step.phone}
-            className="w-full border border-line rounded-md px-3 py-2 text-sm bg-white"
+            className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
           />
         </div>
 
-        {error && <p className="text-sm text-bad">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
 
         <div className="flex gap-2">
           <button
             type="submit"
-            className="bg-ink text-white rounded-md px-4 py-2 text-sm font-medium hover:opacity-90"
+            className="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium hover:bg-primary-hover transition-colors"
           >
             Confirm and score
           </button>
           <button
             type="button"
             onClick={() => setStep({ kind: "pick" })}
-            className="text-sm text-ink/60 px-4 py-2"
+            className="text-sm text-muted hover:text-foreground px-4 py-2 transition-colors"
           >
             Start over
           </button>
@@ -192,5 +198,12 @@ export function UploadForm() {
     );
   }
 
-  return <p className="text-sm text-ink/60">Scoring against the rubric — this can take a few seconds…</p>;
+  return (
+    <div className="border border-border rounded-xl bg-surface p-6 shadow-card">
+      <p className="text-sm text-muted flex items-center gap-2">
+        <span className="w-3.5 h-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        Scoring against the rubric — this can take a few seconds…
+      </p>
+    </div>
+  );
 }

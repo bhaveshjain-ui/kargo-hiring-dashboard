@@ -38,11 +38,11 @@ export function RetryButton({
       <button
         onClick={retry}
         disabled={loading}
-        className="text-sm px-3 py-1.5 rounded-md bg-ink text-white hover:opacity-90 disabled:opacity-50"
+        className="text-sm px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary-hover transition-colors disabled:opacity-50"
       >
         {loading ? loadingLabel : label}
       </button>
-      {error && <p className="text-sm text-bad">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </div>
   );
 }

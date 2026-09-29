@@ -64,39 +64,47 @@ export function EmailDraftPanel({
   }
 
   return (
-    <div className="border border-line rounded-lg bg-white p-5 space-y-3">
+    <div className="border border-border rounded-xl bg-surface p-5 space-y-3 shadow-card">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-ink">
+        <h2 className="text-sm font-semibold text-foreground">
           {kind === "INVITE" ? "Interview invite" : "Warm rejection"}
         </h2>
-        {sent && <span className="text-xs font-medium text-good">Sent</span>}
-        {status === "SENDING" && <span className="text-xs font-medium text-warn">Sending…</span>}
+        {sent && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-success-soft text-success">
+            Sent
+          </span>
+        )}
+        {status === "SENDING" && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-warn-soft text-warn">
+            Sending…
+          </span>
+        )}
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-ink/60 mb-1">Subject</label>
+        <label className="block text-xs font-medium text-muted mb-1">Subject</label>
         <input
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
           disabled={locked}
-          className="w-full border border-line rounded-md px-3 py-2 text-sm disabled:bg-paper disabled:text-ink/50"
+          className="w-full border border-border bg-background rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-surface-hover disabled:text-muted"
         />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-ink/60 mb-1">Body</label>
+        <label className="block text-xs font-medium text-muted mb-1">Body</label>
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
           disabled={locked}
           rows={10}
-          className="w-full border border-line rounded-md px-3 py-2 text-sm font-sans disabled:bg-paper disabled:text-ink/50"
+          className="w-full border border-border bg-background rounded-md px-3 py-2 text-sm text-foreground font-sans focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-surface-hover disabled:text-muted"
         />
       </div>
 
-      {error && <p className="text-sm text-bad">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       {savedOnce && !error && !locked && (
-        <p className="text-xs text-ink/40">Saved.</p>
+        <p className="text-xs text-muted">Saved.</p>
       )}
 
       {!locked && (
@@ -104,14 +112,14 @@ export function EmailDraftPanel({
           <button
             onClick={save}
             disabled={saving || sending}
-            className="text-sm px-3 py-1.5 rounded-md border border-line hover:bg-paper disabled:opacity-50"
+            className="text-sm px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-surface-hover transition-colors disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save draft"}
           </button>
           <button
             onClick={send}
             disabled={sending}
-            className="text-sm px-3 py-1.5 rounded-md bg-ink text-white hover:opacity-90 disabled:opacity-50"
+            className="text-sm px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary-hover transition-colors disabled:opacity-50"
           >
             {sending ? "Sending…" : "Send email"}
           </button>

@@ -1,3 +1,5 @@
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 export const dynamic = "force-dynamic";
 
 export default function LoginPage({
@@ -6,15 +8,23 @@ export default function LoginPage({
   searchParams: { next?: string; error?: string };
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-paper">
+    <div className="min-h-screen flex items-center justify-center bg-background relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <form
         action="/api/login"
         method="POST"
-        className="w-full max-w-sm border border-line bg-white rounded-lg p-8 space-y-4"
+        className="w-full max-w-sm border border-border bg-surface rounded-xl p-8 space-y-5 shadow-card"
       >
-        <div>
-          <h1 className="text-lg font-semibold text-ink">Kargo Hiring Dashboard</h1>
-          <p className="text-sm text-ink/60 mt-1">Enter the dashboard password.</p>
+        <div className="flex flex-col items-center text-center gap-3">
+          <span className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
+            <span className="w-2.5 h-2.5 rounded-sm bg-primary-foreground" />
+          </span>
+          <div>
+            <h1 className="text-lg font-semibold text-foreground">Kargo Hiring Dashboard</h1>
+            <p className="text-sm text-muted mt-1">Enter the dashboard password to continue.</p>
+          </div>
         </div>
         <input type="hidden" name="next" value={searchParams.next || "/"} />
         <input
@@ -23,14 +33,14 @@ export default function LoginPage({
           autoFocus
           required
           placeholder="Password"
-          className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+          className="w-full border border-border bg-background rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
         />
         {searchParams.error && (
-          <p className="text-sm text-bad">Wrong password. Try again.</p>
+          <p className="text-sm text-danger -mt-2">Wrong password. Try again.</p>
         )}
         <button
           type="submit"
-          className="w-full bg-ink text-white rounded-md py-2 text-sm font-medium hover:opacity-90"
+          className="w-full bg-primary text-primary-foreground rounded-md py-2 text-sm font-medium hover:bg-primary-hover transition-colors"
         >
           Enter
         </button>

@@ -39,30 +39,30 @@ export default async function CandidatePage({ params }: { params: { id: string }
       <Nav active="dashboard" />
       <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
         <div>
-          <Link href={`/?role=${appliedRole}`} className="text-sm text-accent hover:underline">
+          <Link href={`/?role=${appliedRole}`} className="text-sm text-primary hover:text-primary-hover font-medium">
             &larr; Back to {appliedRole} candidates
           </Link>
         </div>
 
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-ink">
+            <h1 className="text-xl font-semibold text-foreground tracking-tight">
               {candidate.personalDetails?.name || "Unnamed candidate"}
             </h1>
-            <p className="text-sm text-ink/60 mt-0.5">
+            <p className="text-sm text-muted mt-0.5">
               {candidate.personalDetails?.email}
               {candidate.personalDetails?.phone ? ` · ${candidate.personalDetails.phone}` : ""}
             </p>
-            <p className="text-xs text-ink/40 mt-1">
+            <p className="text-xs text-muted/70 mt-1">
               Applied for {appliedRole} · {candidate.fileName}
             </p>
           </div>
           {candidate.status === "SCORED" && (
             <div className="text-right">
-              <div className="text-2xl font-semibold text-ink">{appliedTotal}</div>
+              <div className="text-2xl font-semibold text-foreground tabular-nums">{appliedTotal}</div>
               <div
                 className={`text-xs font-medium ${
-                  appliedTotal >= INVITE_SCORE_CUTOFF ? "text-good" : "text-ink/50"
+                  appliedTotal >= INVITE_SCORE_CUTOFF ? "text-success" : "text-muted"
                 }`}
               >
                 {appliedTotal >= INVITE_SCORE_CUTOFF ? "Above the line" : "Below the line"}
@@ -72,45 +72,51 @@ export default async function CandidatePage({ params }: { params: { id: string }
         </div>
 
         {candidate.status === "PROCESSING" && (
-          <div className="border border-line bg-white rounded-lg p-4 text-sm text-warn">
+          <div className="border border-border bg-surface rounded-xl p-4 text-sm text-warn shadow-card">
             Scoring in progress…
           </div>
         )}
 
         {candidate.status === "FAILED" && (
-          <div className="border border-bad/30 bg-bad/5 rounded-lg p-4 space-y-2">
-            <p className="text-sm text-bad">Scoring failed: {candidate.failReason}</p>
+          <div className="border border-danger/20 bg-danger-soft rounded-xl p-4 space-y-2">
+            <p className="text-sm text-danger">Scoring failed: {candidate.failReason}</p>
             <RetryButton candidateId={candidate.id} />
           </div>
         )}
 
         {candidate.brief && (
-          <div className="border border-line rounded-lg bg-white p-5">
-            <h2 className="text-sm font-semibold text-ink mb-2">Interview brief</h2>
-            <p className="text-sm text-ink/80 leading-relaxed">{candidate.brief.content}</p>
+          <div className="border border-border rounded-xl bg-surface p-5 shadow-card">
+            <h2 className="text-sm font-semibold text-foreground mb-2">Interview brief</h2>
+            <p className="text-sm text-foreground/80 leading-relaxed">{candidate.brief.content}</p>
           </div>
         )}
 
         {candidate.status === "SCORED" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {(["PM", "SPM"] as RubricRole[]).map((role) => (
-              <div key={role} className="border border-line rounded-lg bg-white p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold text-ink">
-                    {role} rubric {role === appliedRole && <span className="text-accent">(applied)</span>}
+              <div key={role} className="border border-border rounded-xl bg-surface p-5 shadow-card">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-semibold text-foreground">
+                    {role} rubric {role === appliedRole && <span className="text-primary">(applied)</span>}
                   </h2>
-                  <span className="text-sm font-medium text-ink">
+                  <span className="text-sm font-medium text-foreground tabular-nums">
                     {Math.round(totals[role] * 10) / 10}/100
                   </span>
                 </div>
-                <ul className="space-y-3">
+                <ul className="space-y-4">
                   {byRole[role].map((s) => (
                     <li key={s.id} className="text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-ink">{s.criterion.name}</span>
-                        <span className="text-ink/60">{s.score}/3</span>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-foreground">{s.criterion.name}</span>
+                        <span className="text-muted tabular-nums">{s.score}/3</span>
                       </div>
-                      <p className="text-ink/60 text-xs mt-0.5">{s.reason}</p>
+                      <div className="h-1 rounded-full bg-border overflow-hidden mb-1.5">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${(s.score / 3) * 100}%` }}
+                        />
+                      </div>
+                      <p className="text-muted text-xs">{s.reason}</p>
                     </li>
                   ))}
                 </ul>
@@ -120,7 +126,7 @@ export default async function CandidatePage({ params }: { params: { id: string }
         )}
 
         {candidate.status === "SCORED" && !candidate.emailDraft && (
-          <div className="border border-warn/30 bg-warn/5 rounded-lg p-4 space-y-2">
+          <div className="border border-warn/20 bg-warn-soft rounded-xl p-4 space-y-2">
             <p className="text-sm text-warn">
               Scoring finished, but the email draft didn&apos;t generate (likely a transient AI
               error). The scores above are still good.
