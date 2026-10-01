@@ -24,3 +24,15 @@ export function fromAddress(): string {
   }
   return from;
 }
+
+/**
+ * Without a DNS-verified sending domain, Resend only delivers to the
+ * account owner's own verified address — any other `to` (any real
+ * candidate's email) is rejected with "Invalid `to` field". Until a real
+ * domain is verified, RESEND_TEST_RECIPIENT_EMAIL redirects every send
+ * there instead, so the feature is testable end-to-end; unset it once a
+ * verified domain is configured to send to real candidates again.
+ */
+export function toAddress(candidateEmail: string): string {
+  return process.env.RESEND_TEST_RECIPIENT_EMAIL || candidateEmail;
+}

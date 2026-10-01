@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { resendClient, fromAddress } from "@/lib/resend";
+import { resendClient, fromAddress, toAddress } from "@/lib/resend";
 
 export const runtime = "nodejs";
 
@@ -33,7 +33,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     const resend = resendClient();
     const result = await resend.emails.send({
       from: fromAddress(),
-      to: candidate.personalDetails.email,
+      to: toAddress(candidate.personalDetails.email),
       subject: candidate.emailDraft.subject,
       text: candidate.emailDraft.body,
     });
