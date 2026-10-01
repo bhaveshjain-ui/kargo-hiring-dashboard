@@ -62,14 +62,43 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
-      pageTexts.push(
-        content.items.map((item) => ("str" in item ? item.str : "")).join(" ")
-      );
+      pageTexts.push(reconstructLines(content.items));
     }
-    return pageTexts.join("\n");
+    return pageTexts.join("\n\n");
   } finally {
     await loadingTask.destroy();
   }
+}
+
+/**
+ * pdf.js's getTextContent() returns a flat list of text runs with position
+ * data, not pre-joined lines the way pdf-parse's output was — grouping runs
+ * by their Y position to reconstruct lines matters because downstream
+ * heuristics (personalDetails.ts guessName) scan line-by-line for a short,
+ * name-shaped line. Without this, every run on a page concatenates into one
+ * giant line and those heuristics never match anything.
+ */
+function reconstructLines(items: unknown[]): string {
+  const lines: string[] = [];
+  let currentLine = "";
+  let lastY: number | null = null;
+
+  for (const raw of items) {
+    if (!raw || typeof raw !== "object" || !("str" in raw) || !("transform" in raw)) continue;
+    const item = raw as { str: string; transform: number[] };
+    const y = item.transform[5];
+
+    if (lastY !== null && Math.abs(y - lastY) > 2) {
+      lines.push(currentLine.trim());
+      currentLine = item.str;
+    } else {
+      currentLine += (currentLine && item.str && !/\s$/.test(currentLine) ? " " : "") + item.str;
+    }
+    lastY = y;
+  }
+  if (currentLine.trim()) lines.push(currentLine.trim());
+
+  return lines.join("\n");
 }
 
 function normalize(text: string): string {
