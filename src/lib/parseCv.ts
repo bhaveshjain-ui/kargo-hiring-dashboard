@@ -1,6 +1,3 @@
-import path from "path";
-import { pathToFileURL } from "url";
-
 /**
  * Extracts raw text from an uploaded CV file. Supports PDF, DOCX, and plain
  * text/markdown. This is the ONLY place file bytes are touched — everything
@@ -46,13 +43,19 @@ export async function extractCvText(
  */
 async function extractPdfText(buffer: Buffer): Promise<string> {
   const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const standardFontDataUrl = pathToFileURL(
-    path.join(path.dirname(require.resolve("pdfjs-dist/package.json")), "standard_fonts") + "/"
-  ).href;
 
+  // Deliberately omits standardFontDataUrl: it's only used for accurate
+  // glyph-width metrics when *rendering* a page, not for getTextContent().
+  // Pointing it at a real path requires require.resolve() to find the
+  // package on disk, but webpack statically rewrites require.resolve()
+  // calls to a numeric module ID when this file gets bundled (confirmed
+  // in production: "The path argument must be of type string. Received
+  // type number") — a well-known webpack/Next.js gotcha, invisible in
+  // isolated test scripts that bypass webpack entirely. Omitting it only
+  // costs a harmless console warning per unmapped glyph; text extraction
+  // is unaffected (verified against all 30 real resumes in this batch).
   const loadingTask = pdfjsLib.getDocument({
     data: new Uint8Array(buffer),
-    standardFontDataUrl,
     useSystemFonts: true,
   });
 
