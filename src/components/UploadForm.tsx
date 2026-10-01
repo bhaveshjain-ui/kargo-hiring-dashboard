@@ -262,18 +262,18 @@ function QueueRow({
 
 function StatusPill({ status }: { status: ItemStatus }) {
   const map: Record<ItemStatus, { label: string; className: string }> = {
-    parsing: { label: "Reading…", className: "bg-warn-soft text-warn" },
-    ready: { label: "Ready", className: "bg-primary-soft text-primary" },
-    "parse-error": { label: "Couldn't read", className: "bg-danger-soft text-danger" },
-    submitting: { label: "Scoring…", className: "bg-warn-soft text-warn" },
-    done: { label: "Done", className: "bg-success-soft text-success" },
-    "submit-error": { label: "Failed", className: "bg-danger-soft text-danger" },
+    parsing: { label: "Reading", className: "border-warn/40 text-warn" },
+    ready: { label: "Ready", className: "border-primary/40 text-primary" },
+    "parse-error": { label: "Error", className: "border-danger/40 text-danger" },
+    submitting: { label: "Scoring", className: "border-warn/40 text-warn" },
+    done: { label: "Done", className: "border-success/40 text-success" },
+    "submit-error": { label: "Failed", className: "border-danger/40 text-danger" },
   };
   const { label, className } = map[status];
   return (
-    <span className={`flex-none inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium ${className}`}>
+    <span className={`flex-none inline-flex items-center gap-1.5 px-1.5 py-0.5 border text-[11px] font-mono uppercase tracking-wide ${className}`}>
       {(status === "parsing" || status === "submitting") && (
-        <span className="w-2.5 h-2.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+        <span className="w-2 h-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
       )}
       {label}
     </span>

@@ -90,50 +90,58 @@ export function CandidateTable({ candidates }: { candidates: TableCandidate[] })
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search candidates…"
-            className="w-full pl-8 pr-3 py-1.5 text-sm border border-border bg-surface rounded-md text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            className="w-full pl-8 pr-3 py-1.5 text-sm border border-border bg-surface text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
           />
         </div>
         {selected.size > 0 && (
-          <span className="text-xs text-muted">{selected.size} selected</span>
+          <span className="text-xs text-muted font-mono tabular-nums">{selected.size} SELECTED</span>
         )}
       </div>
 
-      <div className="border border-border rounded-xl overflow-hidden bg-surface shadow-card">
+      <div className="border border-border bg-surface">
         <table className="w-full text-sm">
-          <thead className="bg-background text-muted text-xs uppercase tracking-wide">
+          <thead className="border-b border-border-strong text-muted text-[11px] tracking-label uppercase">
             <tr>
-              <th className="w-10 px-4 py-3"></th>
-              <th className="text-left px-2 py-3 font-medium">
+              <th className="w-10 px-4 py-2.5"></th>
+              <th className="text-left px-2 py-2.5 font-medium">
                 <SortHeader label="Rank" active={sortKey === "rank"} asc={sortAsc} onClick={() => toggleSort("rank")} />
               </th>
-              <th className="text-left px-4 py-3 font-medium">
+              <th className="text-left px-4 py-2.5 font-medium">
                 <SortHeader label="Candidate" active={sortKey === "name"} asc={sortAsc} onClick={() => toggleSort("name")} />
               </th>
-              <th className="text-left px-4 py-3 font-medium">
+              <th className="text-left px-4 py-2.5 font-medium">
                 <SortHeader label="Score" active={sortKey === "score"} asc={sortAsc} onClick={() => toggleSort("score")} />
               </th>
-              <th className="text-left px-4 py-3 font-medium">Status</th>
-              <th className="text-left px-4 py-3 font-medium">Brief</th>
-              <th className="text-left px-4 py-3 font-medium">Email</th>
+              <th className="text-left px-4 py-2.5 font-medium">Status</th>
+              <th className="text-left px-4 py-2.5 font-medium">Brief</th>
+              <th className="text-left px-4 py-2.5 font-medium">Email</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((c) => {
               const rank = candidates.indexOf(c) + 1;
+              const top = rank === 1;
               return (
-                <tr key={c.id} className="border-t border-border hover:bg-surface-hover transition-colors">
-                  <td className="px-4 py-3">
+                <tr
+                  key={c.id}
+                  className={`border-b border-border last:border-b-0 hover:bg-surface-hover transition-colors ${
+                    top ? "bg-primary-soft/40" : ""
+                  }`}
+                >
+                  <td className="px-4 py-2.5">
                     <input
                       type="checkbox"
                       checked={selected.has(c.id)}
                       onChange={() => toggleSelected(c.id)}
                       disabled={c.status !== "SCORED"}
-                      className="rounded border-border accent-[rgb(var(--primary))]"
+                      className="border-border accent-[rgb(var(--primary))]"
                       aria-label={`Select ${c.name}`}
                     />
                   </td>
-                  <td className="px-2 py-3 text-muted tabular-nums">{rank}</td>
-                  <td className="px-4 py-3">
+                  <td className={`px-2 py-2.5 font-mono tabular-nums ${top ? "text-primary font-semibold" : "text-muted"}`}>
+                    {String(rank).padStart(2, "0")}
+                  </td>
+                  <td className="px-4 py-2.5">
                     <Link href={`/candidates/${c.id}`} className="flex items-center gap-2.5 group">
                       <Avatar name={c.name} />
                       <div className="min-w-0">
@@ -144,30 +152,32 @@ export function CandidateTable({ candidates }: { candidates: TableCandidate[] })
                       </div>
                     </Link>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-2.5">
                     {c.status === "SCORED" ? (
-                      <span className="font-medium text-foreground tabular-nums">{Math.round(c.total * 10) / 10}</span>
+                      <span className={`font-mono tabular-nums ${top ? "text-base font-semibold text-foreground" : "text-foreground"}`}>
+                        {Math.round(c.total * 10) / 10}
+                      </span>
                     ) : (
-                      <StatusBadge status={c.status} />
+                      <StatusTag status={c.status} />
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-2.5">
                     {c.status === "SCORED" && (
-                      <Badge tone={c.total >= INVITE_SCORE_CUTOFF ? "success" : "muted"}>
-                        {c.total >= INVITE_SCORE_CUTOFF ? "Above the line" : "Below the line"}
-                      </Badge>
+                      <Tag tone={c.total >= INVITE_SCORE_CUTOFF ? "success" : "muted"}>
+                        {c.total >= INVITE_SCORE_CUTOFF ? "Above" : "Below"}
+                      </Tag>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-muted">{c.briefReady ? "Ready" : "—"}</td>
-                  <td className="px-4 py-3 text-muted">
+                  <td className="px-4 py-2.5 text-muted font-mono text-xs">{c.briefReady ? "READY" : "—"}</td>
+                  <td className="px-4 py-2.5">
                     {c.emailStatus === "SENT" ? (
-                      <Badge tone="success">Sent</Badge>
+                      <Tag tone="success">Sent</Tag>
                     ) : c.emailStatus === "SENDING" ? (
-                      <Badge tone="warn">Sending…</Badge>
+                      <Tag tone="warn">Sending</Tag>
                     ) : c.emailStatus === "DRAFT" ? (
-                      <Badge tone="primary">{c.emailKind === "INVITE" ? "Invite draft" : "Reject draft"}</Badge>
+                      <Tag tone="primary">{c.emailKind === "INVITE" ? "Invite" : "Reject"}</Tag>
                     ) : (
-                      "—"
+                      <span className="text-muted">—</span>
                     )}
                   </td>
                 </tr>
@@ -185,11 +195,11 @@ export function CandidateTable({ candidates }: { candidates: TableCandidate[] })
       </div>
 
       {selected.size >= 2 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface border border-border shadow-card rounded-xl px-4 py-3 flex items-center gap-3 z-20">
-          <span className="text-sm text-foreground">{selected.size} candidates selected</span>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface border border-border-strong shadow-raised px-4 py-3 flex items-center gap-3 z-20">
+          <span className="text-sm text-foreground font-mono tabular-nums">{selected.size} SELECTED</span>
           <button
             onClick={goCompare}
-            className="text-sm px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary-hover transition-colors font-medium"
+            className="text-sm px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary-hover transition-colors font-medium"
           >
             Compare
           </button>
@@ -227,29 +237,30 @@ function Avatar({ name }: { name: string }) {
         .join("")
     : "?";
   return (
-    <span className="flex-none w-7 h-7 rounded-full bg-primary-soft text-primary text-xs font-semibold flex items-center justify-center">
+    <span className="flex-none w-7 h-7 bg-primary-soft text-primary text-[11px] font-mono font-semibold flex items-center justify-center">
       {initials}
     </span>
   );
 }
 
-function Badge({ tone, children }: { tone: "success" | "warn" | "danger" | "primary" | "muted"; children: React.ReactNode }) {
+/** Structural tag: text + border, no filled pill — reads as a status marker, not a decoration. */
+function Tag({ tone, children }: { tone: "success" | "warn" | "danger" | "primary" | "muted"; children: React.ReactNode }) {
   const styles: Record<typeof tone, string> = {
-    success: "bg-success-soft text-success",
-    warn: "bg-warn-soft text-warn",
-    danger: "bg-danger-soft text-danger",
-    primary: "bg-primary-soft text-primary",
-    muted: "bg-surface-hover text-muted",
+    success: "border-success/40 text-success",
+    warn: "border-warn/40 text-warn",
+    danger: "border-danger/40 text-danger",
+    primary: "border-primary/40 text-primary",
+    muted: "border-border text-muted",
   };
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${styles[tone]}`}>
+    <span className={`inline-flex items-center px-1.5 py-0.5 border text-[11px] font-mono uppercase tracking-wide ${styles[tone]}`}>
       {children}
     </span>
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  if (status === "PROCESSING") return <Badge tone="warn">Scoring…</Badge>;
-  if (status === "FAILED") return <Badge tone="danger">Failed</Badge>;
-  return <Badge tone="muted">{status}</Badge>;
+function StatusTag({ status }: { status: string }) {
+  if (status === "PROCESSING") return <Tag tone="warn">Scoring</Tag>;
+  if (status === "FAILED") return <Tag tone="danger">Failed</Tag>;
+  return <Tag tone="muted">{status}</Tag>;
 }

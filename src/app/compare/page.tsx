@@ -66,45 +66,42 @@ export default async function ComparePage({
   return (
     <AppShell active="dashboard">
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
-        <div>
+        <div className="border-b border-border-strong pb-5">
           <Link href={`/?role=${appliedRole}`} className="text-sm text-primary hover:text-primary-hover font-medium">
             &larr; Back to {appliedRole} candidates
           </Link>
-          <h1 className="text-xl font-semibold text-foreground tracking-tight mt-2">
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight mt-2">
             Comparing {ordered.length} candidates
           </h1>
         </div>
 
-        <div
-          className="grid gap-4"
-          style={{ gridTemplateColumns: `repeat(${ordered.length}, minmax(220px, 1fr))` }}
-        >
+        <div className="grid bg-border gap-px" style={{ gridTemplateColumns: `repeat(${ordered.length}, minmax(220px, 1fr))` }}>
           {ordered.map((c, i) => (
-            <div key={c.id} className="border border-border rounded-xl bg-surface p-4 shadow-card">
+            <div key={c.id} className="bg-surface p-4">
               <Link href={`/candidates/${c.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
                 {c.personalDetails?.name || "Unnamed"}
               </Link>
               <p className="text-xs text-muted mt-0.5">{c.personalDetails?.email}</p>
               <div className="flex items-center justify-between mt-3">
-                <span className="text-2xl font-semibold text-foreground tabular-nums">{totals[i]}</span>
-                <span className={`text-xs font-medium ${totals[i] >= INVITE_SCORE_CUTOFF ? "text-success" : "text-muted"}`}>
-                  {totals[i] >= INVITE_SCORE_CUTOFF ? "Above the line" : "Below the line"}
+                <span className="font-mono text-2xl font-semibold text-foreground tabular-nums">{totals[i]}</span>
+                <span className={`text-[11px] tracking-label uppercase ${totals[i] >= INVITE_SCORE_CUTOFF ? "text-success" : "text-muted"}`}>
+                  {totals[i] >= INVITE_SCORE_CUTOFF ? "Above" : "Below"}
                 </span>
               </div>
               <div className="mt-2">
-                <JdMatchChip jdMatch={c.jdMatch} jdMatchReason={c.jdMatchReason} />
+                <JdMatchChip jdMatch={c.jdMatch} jdMatchReason={c.jdMatchReason} compact />
               </div>
             </div>
           ))}
         </div>
 
-        <div className="border border-border rounded-xl bg-surface overflow-hidden shadow-card">
+        <div className="border border-border bg-surface overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-background text-muted text-xs uppercase tracking-wide">
+            <thead className="border-b border-border-strong text-muted text-[11px] tracking-label uppercase">
               <tr>
-                <th className="text-left px-4 py-3 font-medium">Criterion ({appliedRole} rubric)</th>
+                <th className="text-left px-4 py-2.5 font-medium">Criterion ({appliedRole} rubric)</th>
                 {ordered.map((c) => (
-                  <th key={c.id} className="text-left px-4 py-3 font-medium">
+                  <th key={c.id} className="text-left px-4 py-2.5 font-medium">
                     {c.personalDetails?.name?.split(/\s+/)[0] || "—"}
                   </th>
                 ))}
@@ -120,7 +117,7 @@ export default async function ComparePage({
                       <td key={c.id} className="px-4 py-3">
                         {s ? (
                           <div>
-                            <span className="font-medium text-foreground tabular-nums">{s.score}/3</span>
+                            <span className="font-mono font-medium text-foreground tabular-nums">{s.score}/3</span>
                             <p className="text-xs text-muted mt-0.5 max-w-xs">{s.reason}</p>
                           </div>
                         ) : (
@@ -135,13 +132,10 @@ export default async function ComparePage({
           </table>
         </div>
 
-        <div
-          className="grid gap-4"
-          style={{ gridTemplateColumns: `repeat(${ordered.length}, minmax(220px, 1fr))` }}
-        >
+        <div className="grid bg-border gap-px" style={{ gridTemplateColumns: `repeat(${ordered.length}, minmax(220px, 1fr))` }}>
           {ordered.map((c) => (
-            <div key={c.id} className="border border-border rounded-xl bg-surface p-4 shadow-card">
-              <h3 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-2">Brief</h3>
+            <div key={c.id} className="bg-surface p-4">
+              <h3 className="text-[11px] tracking-label uppercase text-muted mb-2">Brief</h3>
               <p className="text-sm text-foreground/80 leading-relaxed">
                 {c.brief?.content || <span className="text-muted">Not generated (not in the current top ranking).</span>}
               </p>

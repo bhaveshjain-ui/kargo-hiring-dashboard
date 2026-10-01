@@ -46,34 +46,35 @@ export default async function DashboardPage({
     createdAt: c.createdAt.toISOString(),
   }));
 
-  const scoredCount = ranked.filter((c) => c.status === "SCORED").length;
   const aboveLineCount = ranked.filter((c) => c.status === "SCORED" && c.total >= INVITE_SCORE_CUTOFF).length;
   const briefsCount = ranked.filter((c) => c.brief).length;
 
   return (
     <AppShell active="dashboard">
       <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-end justify-between gap-6 mb-6">
           <div>
-            <h1 className="text-xl font-semibold text-foreground tracking-tight">Candidates</h1>
-            <p className="text-sm text-muted mt-0.5">Ranked by score against the rubric for the role applied to.</p>
+            <p className="text-[11px] tracking-label uppercase text-muted mb-1">
+              Candidates · {role === "PM" ? "Product Manager" : "Senior Product Manager"}
+            </p>
+            <h1 className="text-2xl font-semibold text-foreground tracking-tight">Ranking</h1>
           </div>
-          <div className="flex gap-1 bg-surface border border-border rounded-lg p-1">
+          <div className="flex gap-1 bg-surface border border-border p-1">
             <RoleLink role="PM" active={role === "PM"} />
             <RoleLink role="SPM" active={role === "SPM"} />
           </div>
         </div>
 
         {ranked.length > 0 && (
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <StatCard label="Candidates" value={ranked.length} />
-            <StatCard label="Above the line" value={aboveLineCount} accent="success" />
-            <StatCard label="Briefs ready" value={briefsCount} accent="primary" />
+          <div className="flex border-y border-border-strong mb-8">
+            <Stat label="Candidates" value={ranked.length} />
+            <Stat label="Above the line" value={aboveLineCount} accent="success" />
+            <Stat label="Briefs ready" value={briefsCount} accent="primary" />
           </div>
         )}
 
         {ranked.length === 0 ? (
-          <div className="border border-dashed border-border rounded-xl p-12 text-center text-sm text-muted bg-surface">
+          <div className="border border-dashed border-border p-12 text-center text-sm text-muted bg-surface">
             No {role} candidates yet.{" "}
             <Link href="/upload" className="text-primary hover:text-primary-hover font-medium">
               Upload one
@@ -92,7 +93,7 @@ function RoleLink({ role, active }: { role: RoleTab; active: boolean }) {
   return (
     <Link
       href={`/?role=${role}`}
-      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+      className={`px-3 py-1.5 text-sm font-medium transition-colors ${
         active ? "bg-primary text-primary-foreground" : "text-muted hover:text-foreground hover:bg-surface-hover"
       }`}
     >
@@ -101,7 +102,7 @@ function RoleLink({ role, active }: { role: RoleTab; active: boolean }) {
   );
 }
 
-function StatCard({
+function Stat({
   label,
   value,
   accent,
@@ -111,10 +112,10 @@ function StatCard({
   accent?: "success" | "primary";
 }) {
   return (
-    <div className="border border-border rounded-xl bg-surface p-4 shadow-card">
-      <p className="text-xs text-muted uppercase tracking-wide">{label}</p>
+    <div className="flex-1 border-r border-border last:border-r-0 px-5 py-4 first:pl-0">
+      <p className="text-[11px] tracking-label uppercase text-muted mb-1.5">{label}</p>
       <p
-        className={`text-2xl font-semibold mt-1 tabular-nums ${
+        className={`font-mono text-4xl font-medium tabular-nums leading-none ${
           accent === "success" ? "text-success" : accent === "primary" ? "text-primary" : "text-foreground"
         }`}
       >

@@ -64,19 +64,19 @@ export function EmailDraftPanel({
   }
 
   return (
-    <div className="border border-border rounded-xl bg-surface p-5 space-y-3 shadow-card">
+    <div className="border border-border bg-surface p-5 space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground">
+        <h2 className="text-[11px] tracking-label uppercase text-muted">
           {kind === "INVITE" ? "Interview invite" : "Warm rejection"}
         </h2>
         {sent && (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-success-soft text-success">
+          <span className="inline-flex items-center px-1.5 py-0.5 border border-success/40 text-[11px] font-mono uppercase tracking-wide text-success">
             Sent
           </span>
         )}
         {status === "SENDING" && (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-warn-soft text-warn">
-            Sending…
+          <span className="inline-flex items-center px-1.5 py-0.5 border border-warn/40 text-[11px] font-mono uppercase tracking-wide text-warn">
+            Sending
           </span>
         )}
       </div>
@@ -87,7 +87,7 @@ export function EmailDraftPanel({
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
           disabled={locked}
-          className="w-full border border-border bg-background rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-surface-hover disabled:text-muted"
+          className="w-full border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary disabled:bg-surface-hover disabled:text-muted"
         />
       </div>
 
@@ -98,7 +98,7 @@ export function EmailDraftPanel({
           onChange={(e) => setBody(e.target.value)}
           disabled={locked}
           rows={10}
-          className="w-full border border-border bg-background rounded-md px-3 py-2 text-sm text-foreground font-sans focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-surface-hover disabled:text-muted"
+          className="w-full border border-border bg-background px-3 py-2 text-sm text-foreground font-sans focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary disabled:bg-surface-hover disabled:text-muted"
         />
       </div>
 
@@ -112,14 +112,14 @@ export function EmailDraftPanel({
           <button
             onClick={save}
             disabled={saving || sending}
-            className="text-sm px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-surface-hover transition-colors disabled:opacity-50"
+            className="text-sm px-3 py-1.5 border border-border text-foreground hover:bg-surface-hover transition-colors disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save draft"}
           </button>
           <button
             onClick={send}
             disabled={sending}
-            className="text-sm px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary-hover transition-colors disabled:opacity-50"
+            className="text-sm px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary-hover transition-colors disabled:opacity-50"
           >
             {sending ? "Sending…" : "Send email"}
           </button>

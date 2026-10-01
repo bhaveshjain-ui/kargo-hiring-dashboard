@@ -13,8 +13,8 @@ export default async function SettingsPage() {
   return (
     <AppShell active="settings">
       <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground tracking-tight">Settings</h1>
+        <div className="border-b border-border-strong pb-5">
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Settings</h1>
           <p className="text-sm text-muted mt-1">
             Job descriptions here are used for one thing: checking a CV against
             the JD&apos;s explicit hard requirements (years of experience, named
@@ -29,8 +29,8 @@ export default async function SettingsPage() {
         <JdEditor role="PM" label="Product Manager JD" initialContent={pm?.content || ""} />
         <JdEditor role="SPM" label="Senior Product Manager JD" initialContent={spm?.content || ""} />
 
-        <div className="border border-border rounded-xl bg-surface p-5 text-sm text-foreground/80 space-y-1 shadow-card">
-          <h2 className="text-sm font-semibold text-foreground mb-2">Current scoring thresholds</h2>
+        <div className="border border-border bg-surface p-5 text-sm text-foreground/80 space-y-1">
+          <h2 className="text-[11px] tracking-label uppercase text-muted mb-2">Current scoring thresholds</h2>
           <p>Interview invite cutoff: score &ge; {INVITE_SCORE_CUTOFF}/100 on the applied-role rubric.</p>
           <p>Interview briefs generated for: top {TOP_N_BRIEFS_PER_ROLE} candidates per role.</p>
           <p className="text-xs text-muted pt-1">

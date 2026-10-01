@@ -56,17 +56,17 @@ export default async function CandidatePage({
           </Link>
         </div>
 
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between border-b border-border-strong pb-5">
           <div>
-            <h1 className="text-xl font-semibold text-foreground tracking-tight">
+            <h1 className="text-2xl font-semibold text-foreground tracking-tight">
               {candidate.personalDetails?.name || "Unnamed candidate"}
             </h1>
             <p className="text-sm text-muted mt-0.5">
               {candidate.personalDetails?.email}
               {candidate.personalDetails?.phone ? ` · ${candidate.personalDetails.phone}` : ""}
             </p>
-            <p className="text-xs text-muted/70 mt-1">
-              Applied for {appliedRole} · {candidate.fileName}
+            <p className="text-[11px] tracking-label uppercase text-muted/70 mt-1.5">
+              {appliedRole} · {candidate.fileName}
             </p>
             <div className="mt-2">
               <JdMatchChip jdMatch={candidate.jdMatch} jdMatchReason={candidate.jdMatchReason} />
@@ -74,9 +74,9 @@ export default async function CandidatePage({
           </div>
           {candidate.status === "SCORED" && (
             <div className="text-right flex-none">
-              <div className="text-2xl font-semibold text-foreground tabular-nums">{appliedTotal}</div>
+              <div className="font-mono text-4xl font-medium text-foreground tabular-nums leading-none">{appliedTotal}</div>
               <div
-                className={`text-xs font-medium ${
+                className={`text-[11px] tracking-label uppercase mt-1.5 ${
                   appliedTotal >= INVITE_SCORE_CUTOFF ? "text-success" : "text-muted"
                 }`}
               >
@@ -87,13 +87,13 @@ export default async function CandidatePage({
         </div>
 
         {candidate.status === "PROCESSING" && (
-          <div className="border border-border bg-surface rounded-xl p-4 text-sm text-warn shadow-card">
+          <div className="border-l-2 border-warn bg-surface p-4 text-sm text-warn">
             Scoring in progress…
           </div>
         )}
 
         {candidate.status === "FAILED" && (
-          <div className="border border-danger/20 bg-danger-soft rounded-xl p-4 space-y-2">
+          <div className="border-l-2 border-danger bg-surface p-4 space-y-2">
             <p className="text-sm text-danger">Scoring failed: {candidate.failReason}</p>
             <RetryButton candidateId={candidate.id} />
           </div>
@@ -119,12 +119,12 @@ export default async function CandidatePage({
         {candidate.status === "SCORED" && tab === "overview" && (
           <div className="space-y-6">
             {candidate.brief ? (
-              <div className="border border-border rounded-xl bg-surface p-5 shadow-card">
-                <h2 className="text-sm font-semibold text-foreground mb-2">Interview brief</h2>
+              <div className="border border-border bg-surface p-5">
+                <h2 className="text-[11px] tracking-label uppercase text-muted mb-3">Interview brief</h2>
                 <p className="text-sm text-foreground/80 leading-relaxed">{candidate.brief.content}</p>
               </div>
             ) : (
-              <div className="border border-warn/20 bg-warn-soft rounded-xl p-4 space-y-2">
+              <div className="border-l-2 border-warn bg-surface p-4">
                 <p className="text-sm text-warn">
                   Not in the current top ranking, or the brief/questions step hasn&apos;t generated yet.
                 </p>
@@ -132,7 +132,7 @@ export default async function CandidatePage({
             )}
 
             {!candidate.emailDraft && (
-              <div className="border border-warn/20 bg-warn-soft rounded-xl p-4 space-y-2">
+              <div className="border-l-2 border-warn bg-surface p-4">
                 <p className="text-sm text-warn">
                   The email draft hasn&apos;t generated yet (likely a transient AI error). The
                   scores are still good — see the Email tab to retry just that step.
@@ -143,14 +143,14 @@ export default async function CandidatePage({
         )}
 
         {candidate.status === "SCORED" && tab === "rubric" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border">
             {(["PM", "SPM"] as RubricRole[]).map((role) => (
-              <div key={role} className="border border-border rounded-xl bg-surface p-5 shadow-card">
+              <div key={role} className="bg-surface p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-foreground">
-                    {role} rubric {role === appliedRole && <span className="text-primary">(applied)</span>}
+                  <h2 className="text-[11px] tracking-label uppercase text-muted">
+                    {role} rubric {role === appliedRole && <span className="text-primary">· applied</span>}
                   </h2>
-                  <span className="text-sm font-medium text-foreground tabular-nums">
+                  <span className="font-mono text-sm font-medium text-foreground tabular-nums">
                     {Math.round(totals[role] * 10) / 10}/100
                   </span>
                 </div>
@@ -159,11 +159,11 @@ export default async function CandidatePage({
                     <li key={s.id} className="text-sm">
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-medium text-foreground">{s.criterion.name}</span>
-                        <span className="text-muted tabular-nums">{s.score}/3</span>
+                        <span className="font-mono text-muted tabular-nums">{s.score}/3</span>
                       </div>
-                      <div className="h-1 rounded-full bg-border overflow-hidden mb-1.5">
+                      <div className="h-[3px] bg-border overflow-hidden mb-1.5">
                         <div
-                          className="h-full rounded-full bg-primary"
+                          className="h-full bg-primary"
                           style={{ width: `${(s.score / 3) * 100}%` }}
                         />
                       </div>
@@ -177,12 +177,12 @@ export default async function CandidatePage({
         )}
 
         {candidate.status === "SCORED" && tab === "questions" && (
-          <div className="border border-border rounded-xl bg-surface p-5 shadow-card">
+          <div className="border border-border bg-surface p-5">
             {questionCount > 0 ? (
               <ol className="space-y-3">
                 {candidate.brief!.questions.map((q, i) => (
                   <li key={i} className="flex gap-3 text-sm">
-                    <span className="flex-none w-5 h-5 rounded-full bg-primary-soft text-primary text-xs font-medium flex items-center justify-center mt-0.5">
+                    <span className="flex-none w-5 h-5 bg-primary-soft text-primary font-mono text-[11px] font-medium flex items-center justify-center mt-0.5">
                       {i + 1}
                     </span>
                     <span className="text-foreground/80 leading-relaxed">{q}</span>
@@ -201,7 +201,7 @@ export default async function CandidatePage({
         {candidate.status === "SCORED" && tab === "email" && (
           <div className="space-y-4">
             {!candidate.emailDraft && (
-              <div className="border border-warn/20 bg-warn-soft rounded-xl p-4 space-y-2">
+              <div className="border-l-2 border-warn bg-surface p-4 space-y-2">
                 <p className="text-sm text-warn">
                   Scoring finished, but the email draft didn&apos;t generate (likely a transient AI
                   error). The scores are still good.

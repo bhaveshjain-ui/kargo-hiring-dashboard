@@ -35,8 +35,8 @@ export function JdEditor({
   }
 
   return (
-    <div className="border border-border rounded-xl bg-surface p-5 space-y-2 shadow-card">
-      <h2 className="text-sm font-semibold text-foreground">{label}</h2>
+    <div className="border border-border bg-surface p-5 space-y-2">
+      <h2 className="text-[11px] tracking-label uppercase text-muted">{label}</h2>
       <textarea
         value={content}
         onChange={(e) => {
@@ -45,7 +45,7 @@ export function JdEditor({
         }}
         placeholder={`Paste the ${role} job description here. Once saved, new candidates are checked against its explicit hard requirements (years of experience, named must-haves) — shown as a match/mismatch chip, separate from the rubric score.`}
         rows={8}
-        className="w-full border border-border bg-background rounded-md px-3 py-2 text-sm text-foreground font-sans placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+        className="w-full border border-border bg-background px-3 py-2 text-sm text-foreground font-sans placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
       />
       {error && <p className="text-sm text-danger">{error}</p>}
       <div className="flex items-center gap-3">
