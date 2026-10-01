@@ -154,7 +154,8 @@ async function runEmailAndBriefStep(scored: ScoredCandidate): Promise<void> {
   }
 }
 
-async function draftEmailForCandidate(scored: ScoredCandidate): Promise<void> {
+/** Exported for testing the "never overwrite an already-sent draft" guard below. */
+export async function draftEmailForCandidate(scored: ScoredCandidate): Promise<void> {
   const existing = await prisma.emailDraft.findUnique({ where: { candidateId: scored.candidateId } });
   if (existing && existing.status !== "DRAFT") {
     // Already sent (or a send is in flight) — never overwrite that, even

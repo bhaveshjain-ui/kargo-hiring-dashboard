@@ -81,7 +81,8 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
  * name-shaped line. Without this, every run on a page concatenates into one
  * giant line and those heuristics never match anything.
  */
-function reconstructLines(items: unknown[]): string {
+/** Exported for testing — pure function, no PDF file or pdf.js needed to exercise it. */
+export function reconstructLines(items: unknown[]): string {
   const lines: string[] = [];
   let currentLine = "";
   let lastY: number | null = null;

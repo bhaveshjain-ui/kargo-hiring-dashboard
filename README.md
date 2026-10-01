@@ -89,6 +89,41 @@ See [`.env.example`](.env.example) for the full list with comments:
 (Netlify works too — it's a standard Next.js app — but Vercel is the path of
 least resistance for the App Router + serverless functions used here.)
 
+## Testing
+
+```bash
+npm test          # unit tests (vitest) — pure logic: rubric ranking/scoring,
+                   # PII redaction, zod validation of Gemini's output, the
+                   # pipeline's email-draft guard rails
+npm run build      # production build + type-check
+npm run test:smoke # boots the REAL production server and uploads a real PDF
+                    # through the actual /api/candidates/parse route
+```
+
+The unit suite (`src/**/*.test.ts`) covers logic bugs hit during development —
+each test file has a comment on the specific regression it guards against,
+e.g. `rankByScore`'s tie-break stability, `draftEmailForCandidate` never
+overwriting an already-sent draft, or `parseScoringResult` rejecting a
+response missing a criterion. These run directly in Node via Vitest, which
+is fast but has a blind spot: webpack-bundling bugs. `src/lib/parseCv.ts`
+once used `require.resolve()` to locate a font-data path — this worked fine
+under `vitest` (which imports the function directly, bypassing webpack) but
+broke in the real deployed app, where Next.js's bundler rewrites
+`require.resolve()` calls to a numeric module ID at build time. Unit tests
+and `next build`'s type-check both stayed green while that bug was live in
+production.
+
+`npm run test:smoke` (`scripts/smoke-test.mjs`) exists to catch that class of
+bug: it runs `next start` for real and uploads
+[`test-fixtures/sample-resume.pdf`](test-fixtures/sample-resume.pdf) through
+the actual API route, asserting the response has the right detected
+name/email and multi-line extracted text. It needs `npm run build` to have
+been run first, and only needs `DASHBOARD_PASSWORD` set (the route it hits
+never touches the database or calls Gemini).
+
+All three are wired into [CI](.github/workflows/ci.yml) on every push and PR
+to `master`.
+
 ## What's deliberately NOT built
 
 - **No hard-requirements pre-check against the JD.** The rubric

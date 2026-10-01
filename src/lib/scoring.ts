@@ -36,6 +36,11 @@ const scoringResultSchema = z
 
 export type ScoringResult = z.infer<typeof scoringResultSchema>;
 
+/** Exported for testing — validates a (would-be) Gemini scoring response without calling the API. */
+export function parseScoringResult(data: unknown): ScoringResult {
+  return scoringResultSchema.parse(data);
+}
+
 const GEMINI_SCORING_SCHEMA = {
   type: "object",
   properties: {
@@ -106,6 +111,6 @@ ${cvBodyRedacted}
     systemInstruction,
     prompt,
     responseSchema: GEMINI_SCORING_SCHEMA,
-    parse: (data) => scoringResultSchema.parse(data),
+    parse: parseScoringResult,
   });
 }
