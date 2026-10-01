@@ -40,7 +40,10 @@ change them.
   gets deployed. Any Postgres works (Supabase, RDS, etc.) — just change
   `DATABASE_URL`.
 - **Gemini** (`@google/genai`) — scoring, briefs, and email drafts. Model is
-  configurable via `GEMINI_MODEL` (defaults to `gemini-3.8-flash`).
+  configurable via `GEMINI_MODEL` (defaults to `gemini-3.8-flash`). Supports
+  multiple API keys via `GEMINI_API_KEYS` (comma-separated) — if one is
+  dead, rate-limited, or out of quota, `src/lib/gemini.ts` automatically
+  retries the next one.
 - **Resend** — the only thing that sends real email, and only when Arjun
   clicks Send.
 - **Tailwind** — minimal, functional styling only.
@@ -64,7 +67,7 @@ See [`.env.example`](.env.example) for the full list with comments:
 | Variable | Where to get it |
 |---|---|
 | `DATABASE_URL` | Create a free Postgres project at [neon.tech](https://neon.tech), copy the connection string |
-| `GEMINI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| `GEMINI_API_KEYS` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) — comma-separated, one or more |
 | `RESEND_API_KEY` | [resend.com](https://resend.com) → API Keys |
 | `RESEND_FROM_EMAIL` | Must be a sender verified on your Resend account/domain |
 | `DASHBOARD_PASSWORD` | Anything — this is the only auth this app has |
